@@ -6,6 +6,6 @@ RUN apt-get update && \
 	
 RUN java -version
 
-COPY /target/$jarToCopy /app/app.jar
+COPY /target/hellodocker-0.0.1-SNAPSHOT.jar /app/app.jar
 
 CMD ["java", "-cp", "/app/app.jar", "com.examples.hellodocker.App"]
