@@ -1,15 +1,27 @@
 package com.examples.hellodocker;
 
+import org.bson.Document;
+
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+
 /**
- * Hello world!
- *
+ * Simple app accessing MongoDB.
  */
 public class App {
 	public static void main(String[] args) {
-		System.out.println("Hello World!");
-	}
-	
-	public String returnString(String myString) {
-		return myString;
+		String mongoHost = "localhost";
+		if (args.length > 0)
+			mongoHost = args[0];
+		// default port for MongoDB is 27017
+		MongoClient mongoClient = new MongoClient(mongoHost);
+		MongoDatabase db = mongoClient.getDatabase("mydb");
+		MongoCollection<Document> collection = db.getCollection("examples");
+		Document doc = new Document("name", "Greeting").append("type", "Hello World!");
+		collection.insertOne(doc);
+		// should print "Hello World!"
+		System.out.println(collection.find().first().get("type"));
+		mongoClient.close();
 	}
 }

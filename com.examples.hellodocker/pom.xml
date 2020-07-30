@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.examples</groupId>
-  <artifactId>hellodocker</artifactId>
+  <artifactId>hellodockernet</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
@@ -12,6 +12,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <mongo.driver.version>3.12.1</mongo.driver.version>
   </properties>
 
   <dependencies>
@@ -21,7 +22,39 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongo-java-driver</artifactId>
+      <version>${mongo.driver.version}</version>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+              <archive>
+                <manifest>
+                  <mainClass>com.examples.hellodockernet.SimpleMongoApp</mainClass>
+                </manifest>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <profile>
@@ -31,22 +64,56 @@
           <plugin>
             <groupId>io.fabric8</groupId>
             <artifactId>docker-maven-plugin</artifactId>
-            <version>0.27.2</version>
+            <version>0.28.0</version>
             <configuration>
-              <showLogs>true</showLogs>
+              <!-- Docker custom networks mentioned in the run image configurations 
+                will be created automatically start and removed during stop. -->
+              <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
               <images>
                 <image>
-                  <name>java-hello-java</name>
+                  <name>java-mongo-hello-java</name>
                   <build>
                     <dockerFileDir>${project.basedir}</dockerFileDir>
-                    <args>
-                      <jarToCopy>${project.artifactId}-${project.version}.jar</jarToCopy>
-                    </args>
                   </build>
                   <run>
+                    <network>
+                      <mode>custom</mode>
+                      <name>my-network</name>
+                    </network>
                     <wait>
                       <log>Hello World!</log>
                       <exit>0</exit>
+                      <time>10000</time>
+                    </wait>
+                    <dependsOn>
+                      <container>mongo</container>
+                    </dependsOn>
+                  </run>
+                </image>
+                <image>
+                  <name>mongo:4.2.3</name>
+                  <alias>mongo</alias>
+                  <run>
+                    <network>
+                      <mode>custom</mode>
+                      <name>my-network</name>
+                      <alias>mongodb</alias>
+                    </network>
+                    <wait>
+                      <log>waiting for connections on port 27017</log>
+                      <time>10000</time>
+                    </wait>
+                  </run>
+                </image>
+                <image>
+                  <alias>app</alias>
+                  <external>
+                    <type>compose</type>
+                    <basedir>${project.basedir}</basedir>
+                  </external>
+                  <run>
+                    <wait>
+                      <log>Hello World!</log>
                       <time>10000</time>
                     </wait>
                   </run>
